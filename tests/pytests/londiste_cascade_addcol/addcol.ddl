@@ -1,0 +1,1 @@
+ALTER TABLE pgbench_tellers ADD COLUMN testadd text
