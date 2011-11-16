@@ -8,8 +8,14 @@ from Londiste3 import Londiste3Cluster
 
 
 def setup_londiste_simple_replication():
+    print '= Setting up simple Londiste3 replication =\n'
+    print 'Hannu Krosing\n'
     l3c = Londiste3Cluster('l3db1', 'l3db2', howto=True)
     l3c.start()
+    print '== the setup of simple 2 node cluster is done ==\n'
+    print '''You can use the pgbench command to generate more load and
+    londiste --compare to check if replicaton is ok.
+    '''
     
 
 def cleanup():
@@ -19,7 +25,6 @@ def cleanup():
 if __name__ == '__main__':
     if len(sys.argv) <= 1 or sys.argv[1] == 'a':
         setup_londiste_simple_replication()
-        print 'use: psql l3db3 -c "\d pgbench_tellers" to check for column pgbench_tellers.testadd in added database' 
     elif len(sys.argv) > 1 and sys.argv[1] == 'X':
         print 'cleaning up!'
         cleanup()

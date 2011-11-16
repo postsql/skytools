@@ -3,7 +3,7 @@
 from subprocess import Popen, PIPE, call
 
 def run_cmd(cmd, shell=False):
-    print '# cmd:\n%s' % (' '.join(cmd))
+    print '\n\nRun command :\n----\n%s\n----' % (' '.join(cmd))
     p = Popen(cmd, stdout=PIPE, stderr=PIPE, stdin=PIPE, shell=shell)
     out, err = p.communicate()
 #    if p.returncode:
@@ -11,7 +11,7 @@ def run_cmd(cmd, shell=False):
     return (p.returncode,out, err)
 
 def run_pipe(cmd1, cmd2):
-    print '#pipe:\n %s | %s' % (' '.join(cmd1), ' '.join(cmd2))
+    print '\n\nRun command with pipe:\n----\n %s | %s\n----' % (' '.join(cmd1), ' '.join(cmd2))
     p1 = Popen(cmd1, stdout=PIPE)
     p2 = Popen(cmd2, stdin=p1.stdout, stdout=PIPE)
     out, err = p2.communicate()
@@ -24,7 +24,7 @@ from threading import Thread
 running_threads = []
 
 def run_in_background(cmd):
-    print '#starting command in background: \n%s' % (' '.join(cmd))
+    print '\n\nRun the following command in background:\n----\n%s\n----s' % (' '.join(cmd))
     t = Thread(target=run_cmd, args=[cmd])
     t.start()
     running_threads.append(t)

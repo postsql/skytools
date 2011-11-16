@@ -46,11 +46,14 @@ class PGDatabase:
         con = self.get_su_conn()
         cur = con.cursor()
         print 'sql:', 'DROP DATABASE %s;' % self.dbname
-        cur.execute('DROP DATABASE %s;' % self.dbname)
+        try:
+            cur.execute('DROP DATABASE %s;' % self.dbname)
+        except psycopg2.ProgrammingError:
+            pass
     def createdb(self):
         con = self.get_su_conn()
         cur = con.cursor()
-        print 'sql:', 'CREATE DATABASE %s;' % self.dbname
+        print 'Run the following SQL:\n----\nCREATE DATABASE %s;\n----\n' % self.dbname
         cur.execute('CREATE DATABASE %s;' % self.dbname)
     def copy_schema_from(self, copyfrom_db):
         connargs_src = copyfrom_db.get_db_cmdline_args()

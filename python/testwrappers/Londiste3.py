@@ -7,7 +7,7 @@ from Shell import run_cmd
 LONDISTE = 'londiste3'
 PGQD = 'pgqd'
 
-pgqd_ini_template = """
+pgqd_ini_template = """\
 [pgqd]
 
 logfile = %(basedir)s/log/pgqd.log
@@ -23,8 +23,14 @@ pidfile = %(basedir)s/pid/pgqd.pid
 #check_period = 60
 #retry_period = 30
 #maint_period = 120
-#ticker_period = 1
+#ticker_period = 1\
 """
+
+def howto(text):
+    print 'Londiste3.py:',
+    print text
+
+
 
 class PgQD:
     def __init__(self, basedir='.'):
@@ -41,6 +47,10 @@ class PgQD:
         pgqd_ini = pgqd_ini_template % self.__dict__
         with open(self.inifile,'w') as f:
             f.write(pgqd_ini)
+        print 'Create config file %s' % self.inifile
+        print '----'
+        print pgqd_ini
+        print '----'
     def start(self):
         "starts pgqd"
         cmd = [PGQD, '-d', self.inifile]
@@ -59,20 +69,23 @@ class PgQD:
     def stop(self):
         "stops pgqd"
         pidfile = '%s/pid/pgqd.pid' % self.basedir
-        pid = open(pidfile).read().strip()
-        cmd = ['kill', pid]
-        retcode, out, err = run_cmd(cmd)
+        try:
+            pid = open(pidfile).read().strip()
+            cmd = ['kill', pid]
+            retcode, out, err = run_cmd(cmd)
+        except:
+            pass # ok to not have a pidfile in partially set up cluster
 
 # select table_name, local, merge_state from londiste.get_table_list(E'replika')
 
-londiste3_ini_template = """
+londiste3_ini_template = """\
 [londiste3]
 job_name = %(job_name)s
 db = %(connect_string)s
 queue_name = %(queue_name)s
 logfile = %(logfile)s
 pidfile = %(pidfile)s
-handler_modules = londiste.handlers.merge
+handler_modules = londiste.handlers.merge\
 """
 
 # handler_modules = londiste.handlers.merge - this should go into options/args somehere
@@ -105,12 +118,17 @@ class Londiste3Node:
         raise NotImplemented, 'Londiste3Node.get_provider_db()'
     def create_ini_file(self):
         "creates .ini file for pgqd and all directories defined in it"
+        
         for subdir in [self.logdir, self.piddir]:
             if not os.path.exists(subdir):
                 os.makedirs(subdir)
         londiste3_ini = londiste3_ini_template % self.__dict__
         with open(self.inifile,'w') as f:
             f.write(londiste3_ini)
+        print 'Create configuration file %s' % self.inifile
+        print '----'
+        print londiste3_ini
+        print '----'
     def wait_replication_state_ok(self, timeout=-1):
         have_waited = 0
         con = self.database. get_db_conn()
@@ -160,11 +178,14 @@ class Londiste3Node:
             return True
         return False
     def stop(self):
-        "stops the replay process"
-        cmd = [LONDISTE, '-d',  self.inifile, '--stop']
-        retcode, out, err = run_cmd (cmd)
-        if retcode:
-            raise Exception, 'start failed: %s.' % ' '.join(cmd)
+        "stops the replay process" # TODO - should check for existing pidfile
+        try:
+            cmd = [LONDISTE, '-d',  self.inifile, '--stop']
+            retcode, out, err = run_cmd (cmd)
+            if retcode:
+                raise Exception, 'stop failed: %s.' % ' '.join(cmd)
+        except:
+            pass
     def add_tables(self, tablelist=[], flags=['--all']):
         "adds tables to replication, by default adds all user tables"
         cmd = [LONDISTE, self.inifile, 'add-table'] + tablelist + flags
@@ -222,7 +243,7 @@ from PGDatabase import PGDatabase
 from PGBench import PGBench
 
 class Londiste3Cluster:
-    def __init__(self, root_db_name, branch_db_name, leaf_db_name=None, basedir = 'st3test'):
+    def __init__(self, root_db_name, branch_db_name, leaf_db_name=None, basedir = 'st3test', howto=None):
         self.root_db_name = root_db_name
         self.branch_db_name = branch_db_name
         self.leaf_db_name = leaf_db_name
@@ -235,10 +256,15 @@ class Londiste3Cluster:
         self.node2 = Londiste3Node(self.db2, 'branch', 'node2', provider_db=self.db1, basedir = self.basedir)
         if self.leaf_db_name:
             self.init_leaf_node()
+        self._howto = howto
+    def howto(self, text):
+        if not self._howto: return
+        print text
     def init_leaf_node(self):
         self.db3 = PGDatabase(self.leaf_db_name )
         self.node3 = Londiste3Node(self.db3, 'leaf', 'node3', provider_db=self.db1, basedir = self.basedir)
     def start(self):
+        self.howto('== Set up schema for root database')
         self.setup_root_schema()
         self.setup_replicated_schema(self.db2)
         if self.leaf_db_name:
@@ -251,9 +277,12 @@ class Londiste3Cluster:
         self.pgqd.start()
     def setup_root_schema(self):
         # create database
+        self.howto('=== Create database ===')
         self.db1.createdb()
         # create schemas, populate with data and modify for replication
+        self.howto('=== set up schema for pgbench ===')
         self.pgb.pgb_init_db()
+        self.howto('=== and add primary and foreign keys needed for replication ===')
         self.pgb.modify_db_for_replication()
     def setup_replicated_schema(self, db):
         # create database
